@@ -1,0 +1,111 @@
+---
+title: "MBTI"
+author: "Alex Kan -lexokan"
+date: "February 13, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+### TENSORFLOW INSTALLATION 
+
+#if (!require("tfestimators")) install.packages("tfestimators")
+#library(tfestimators)
+#install_tensorflow()
+
+
+### TIDYVERSE INSTALLATION
+
+# if (!require("tidyverse")) install.packages("tidyverse")
+ library(tidyverse)
+
+# GLOVE DOWNLOAD 
+# https://nlp.stanford.edu/projects/glove/
+# GOTO: "Download pre-trained word vectors"  download glove.6B.zip 
+
+
+### KAGGLE LINK
+
+# https://www.kaggle.com/datasnaek/mbti-type
+
+fulldf <- read_csv("data/mbti_1.csv")
+train <- read_csv("data/train.csv")
+test <- read_csv("data/test_labeled.csv")
+```
+
+EDA 
+```{r, eval = F }
+#if (!require("tm")) install.packages("tm")
+#if (!require("SnowballC")) install.packages("SnowballC")
+#if (!require("wordcloud")) install.packages("wordcloud")
+library(tm)
+library(SnowballC)
+library(wordcloud)
+
+I <- fulldf$posts[grep(".*[I].*", fulldf$posts)]
+E <- fulldf$posts[grep(".*[E].*", fulldf$posts)]
+
+N <- fulldf$posts[grep(".*[N].*", fulldf$posts)]
+S <- fulldf$posts[grep(".*[S].*", fulldf$posts)]
+
+t <- fulldf$posts[grep(".*[T].*", fulldf$posts)]
+f <- fulldf$posts[grep(".*[F].*", fulldf$posts)]
+
+J <- fullfulldf$posts[grep(".*[J].*", fulldf$posts)]
+P <- fulldf$posts[grep(".*[P].*", fulldf$posts)]
+
+create_cloud <- function(x) {
+   
+Corpus <- Corpus(VectorSource(x))
+Corpus <- tm_map(Corpus, PlainTextDocument)
+Corpus <- tm_map(Corpus, removePunctuation)
+Corpus <- tm_map(Corpus, removeWords, stopwords('english'))
+Corpus <- tm_map(Corpus, stemDocument)
+Corpus <- Corpus(VectorSource(Corpus))
+wordcloud(Corpus, max.words = 50, random.order = F)
+    
+}
+
+create_cloud(I)
+create_cloud(E)
+create_cloud(N)
+create_cloud(S)
+create_cloud(t)
+create_cloud(f)
+create_cloud(J)
+create_cloud(P)
+
+
+```
+
+
+MODELING 
+```{r}
+# Split data 70/30 
+set.seed(1)
+```
+
+```{r}
+# Log reg 
+```
+
+```{r}
+# Random forest 
+```
+
+```{r}
+# SVM 
+```
+
+```{r}
+# LDA/ QDA
+```
+
+```{r}
+# Bayesian networks 
+```
+
+```{r}
+# Neural net 
+```
+
+
