@@ -98,7 +98,10 @@ create_cloud(P)
 ```{r}
 #if (!require("ngram")) install.packages("ngram")
 library(ngram)
+#if (!require("stringr")) install.packages("stringr")
 library(stringr)
+#if (!require("lettercase")) install.packages("lettercase")
+library(lettercase)
 
 # Create ordered vector of all of the MBTI types for featurization 
 types <- data.frame(unique(train$type))
@@ -106,42 +109,53 @@ types <- as.character(types[order(types[[1]]), ])
 types <- tolower(types)
 
 # Def function to create necessary features for 
-featurize <- function(df) {
+featurize <- function(x) {
     
     # Define empty tibbles that will be filled within for loop
     nwords <- tibble(nwords = integer())
     words <- tibble(words = character())
     posts <- tibble(words = character())
+    
+    #posts <- lapply(x[,3], str_lower_case)
 
-    
-    Encoding(forumposts) <- "UTF-8"
-    for (i in seq_along(1:nrow(df))) {
+    for (i in seq_along(1:nrow(x))) {
         
-        # Fill word count vector and make all characters within posts lowercase 
-        words[i,1] <- as.character(unlist(df[i,3]))
+        # Fill word count vector and make all characters within posts lowercase
+        
+        words[i,1] <- as.character(unlist(x[i,3]))
         nwords[i,1] <- wordcount(unlist(words[i,1]))
-        df[i,3] <- gsub(pattern = "|||", replacement = "", df[i,3])
+        x[i,3] <- iconv(x[i,3], "latin1", "ASCII", sub = " ")
+        x[i,3] <- tolower(x[i,3])
     
+        #x[i,3] <- gsub(pattern = "|||", replacement = "", x[i,3])
     }
-        # Create new features within dataframe
-    
-    df[4] <- nwords
-    df[3] <- lapply(df[,3], str_lower_case)
-    
-    
-    # Determine number of references to each MBTI type within each post 
-    for (type in types) {
         
+    # Create new features within dataframe
+    
+    x[4] <- nwords
+    
+    #x$posts <- iconv(x[3], "UTF-8", "UTF-8",sub='')
+    #x$posts <- unlist(lapply(x[,3], str_lower_case))
+      # Determine number of references to each MBTI type within each post 
+    for (type in types) {
+    
         numtype <- tibble(numtype = integer())
-        for (i in seq_along(1:nrow(df))) {
-           numtype[i,1] <- str_count(df[i, 3], type)
+        
+        for (i in seq_along(1:nrow(x))) {
+           numtype[i,1] <- str_count(x[i, 3], type)
         }
 
-        df[paste("num", type, sep = "")] <- numtype
-
-    }
+        x[paste("num", type, sep = "")] <- as.tibble(numtype)
+        
+        numtype <- tibble(numtype = integer())
+ }
+    
+    x
 }
 
+# TEST
+df <- train[1:50, ]
+df <- featurize(df)
 
 ```
 
@@ -164,7 +178,6 @@ validation <- train[rows, ]
 train <- train[-rows, ]
 
 # Create Tensorflow input function 
-
 
 ```
 
