@@ -5,25 +5,24 @@ date: "February 13, 2018"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
+```{r setup, message = F}
 ### TENSORFLOW INSTALLATION 
 
 #if (!require("tfestimators")) install.packages("tfestimators")
-#library(tfestimators)
+library(tfestimators)
 #install_tensorflow()
 
 
 ### TIDYVERSE INSTALLATION
 
 # if (!require("tidyverse")) install.packages("tidyverse")
- library(tidyverse)
+library(tidyverse)
 
 # GLOVE DOWNLOAD 
 # https://nlp.stanford.edu/projects/glove/
 # GOTO: "Download pre-trained word vectors"  download glove.6B.zip 
 
-
-### KAGGLE LINK
+### MBTI KAGGLE COMPETITION LINK LINK
 
 # https://www.kaggle.com/datasnaek/mbti-type
 
@@ -32,11 +31,14 @@ train <- read_csv("data/train.csv")
 test <- read_csv("data/test_labeled.csv")
 ```
 
+full_training_data[“posts”].apply(lambda x: re.sub(“[^a-z]+“, ” “, x.lower()))
+
 EDA 
-```{r, eval = F }
+```{r, eval = F, message = F}
 #if (!require("tm")) install.packages("tm")
 #if (!require("SnowballC")) install.packages("SnowballC")
 #if (!require("wordcloud")) install.packages("wordcloud")
+
 library(tm)
 library(SnowballC)
 library(wordcloud)
@@ -50,7 +52,7 @@ S <- fulldf$posts[grep(".*[S].*", fulldf$posts)]
 t <- fulldf$posts[grep(".*[T].*", fulldf$posts)]
 f <- fulldf$posts[grep(".*[F].*", fulldf$posts)]
 
-J <- fullfulldf$posts[grep(".*[J].*", fulldf$posts)]
+J <- fulldf$posts[grep(".*[J].*", fulldf$posts)]
 P <- fulldf$posts[grep(".*[P].*", fulldf$posts)]
 
 create_cloud <- function(x) {
@@ -61,8 +63,13 @@ Corpus <- tm_map(Corpus, removePunctuation)
 Corpus <- tm_map(Corpus, removeWords, stopwords('english'))
 Corpus <- tm_map(Corpus, stemDocument)
 Corpus <- Corpus(VectorSource(Corpus))
+
+path <- paste("Word Clouds/", deparse(substitute(x)), ".png", sep = "")
+png(path)
+
 wordcloud(Corpus, max.words = 50, random.order = F)
-    
+dev.off()
+
 }
 
 create_cloud(I)
@@ -77,12 +84,60 @@ create_cloud(P)
 
 ```
 
+full_training_data[“posts”].apply(lambda x: re.sub(“[^a-z]+“, ” “, x.lower()))
+FEATURIZATION
+```{r}
+#if (!require("ngram")) install.packages("ngram")
+library(ngram)
+
+types <- data.frame(unique(train$type))
+types <- as.character(types[order(types[[1]]), ])
+
+# length of post in number of words 
+featurize <- function(df) {
+    
+    nwords <- tibble(nwords = integer())
+    posts <- tibble(posts = character())
+    
+    for (i in seq_along(1:nrow(df))) {
+        
+        words <- df[i, 3] %>% unlist()
+        nwords[i] <- wordcount(words)
+        posts[i] <- lapply(test[i, 3], tolower)
+    }
+    
+    df$type <- tolower(df$type)
+    df$posts <- posts
+    
+    df$nwords <- nwords
+    
+}
+
+# mentions of each of 16 personalities 
+
+```
 
 MODELING 
 ```{r}
 # Split data 70/30 
 set.seed(1)
+
+# Randomly sample rows from the training set to split into the validation set 
+# Validation set is sized 25% to that of the training set 
+
+rows <- sample(1:nrow(train), size = nrow(train) * .25, replace = F)
+
+validation <- train[rows, ]
+train <- train[-rows, ]
+
+
+
 ```
+
+
+
+### TENSORFLOW REFERNECE ### 
+https://tensorflow.rstudio.com/tfestimators/ 
 
 ```{r}
 # Log reg 
