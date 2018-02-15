@@ -23,15 +23,16 @@ library(tidyverse)
 # https://nlp.stanford.edu/projects/glove/
 # GOTO: "Download pre-trained word vectors"  download glove.6B.zip 
 
-### MBTI KAGGLE COMPETITION LINK LINK
+### MBTI KAGGLE COMPETITION LINK 
 
 # https://www.kaggle.com/datasnaek/mbti-type
 
 
-#Read in full dataset, full training set, and test set 
+# Read in full dataset, full training set, and test set 
 fulldf <- read_csv("data/mbti_1.csv")
 train <- read_csv("data/train.csv")
 test <- read_csv("data/test_labeled.csv")
+
 ```
 
 ### EDA ###
@@ -46,20 +47,23 @@ library(wordcloud)
 
 # Create new dataframes for each of the MBTI dimensions 
 
-I <- fulldf$posts[grep(".*[I].*", fulldf$posts)]
-E <- fulldf$posts[grep(".*[E].*", fulldf$posts)]
+I <- fulldf$posts[grep(".*[I].*", fulldf$type)]
+E <- fulldf$posts[grep(".*[E].*", fulldf$type)]
 
-N <- fulldf$posts[grep(".*[N].*", fulldf$posts)]
-S <- fulldf$posts[grep(".*[S].*", fulldf$posts)]
+N <- fulldf$posts[grep(".*[N].*", fulldf$type)]
+S <- fulldf$posts[grep(".*[S].*", fulldf$type)]
 
-t <- fulldf$posts[grep(".*[T].*", fulldf$posts)]
-f <- fulldf$posts[grep(".*[F].*", fulldf$posts)]
+t <- fulldf$posts[grep(".*[T].*", fulldf$type)]
+f <- fulldf$posts[grep(".*[F].*", fulldf$type)]
 
-J <- fulldf$posts[grep(".*[J].*", fulldf$posts)]
-P <- fulldf$posts[grep(".*[P].*", fulldf$posts)]
+J <- fulldf$posts[grep(".*[J].*", fulldf$type)]
+P <- fulldf$posts[grep(".*[P].*", fulldf$type)]
 
+# Wow! It looks like introverts love these forums! 
 
-# Def function to create and save a word cloud of top 50 most used words (minus stopwords) by commenters containing each aspect 
+# Def function to create and save a word cloud of top 50 most used words (minus stopwords) by commenters containing each aspect
+
+# https://www.r-bloggers.com/building-wordclouds-in-r/ 
 create_cloud <- function(x) {
    
 Corpus <- Corpus(VectorSource(x))
@@ -94,55 +98,61 @@ create_cloud(P)
 ```{r}
 #if (!require("ngram")) install.packages("ngram")
 library(ngram)
+library(stringr)
 
 # Create ordered vector of all of the MBTI types for featurization 
 types <- data.frame(unique(train$type))
 types <- as.character(types[order(types[[1]]), ])
+types <- tolower(types)
 
 # Def function to create necessary features for 
 featurize <- function(df) {
     
     # Define empty tibbles that will be filled within for loop
-    posts <- tibble(posts = character())
     nwords <- tibble(nwords = integer())
+    words <- tibble(words = character())
+    posts <- tibble(words = character())
+
     
+    Encoding(forumposts) <- "UTF-8"
     for (i in seq_along(1:nrow(df))) {
         
         # Fill word count vector and make all characters within posts lowercase 
-        words <- df[i, 3] %>% unlist()
-        nwords[i] <- wordcount(words)
-        posts[i] <- lapply(test[i, 3], tolower)
-    }
+        words[i,1] <- as.character(unlist(df[i,3]))
+        nwords[i,1] <- wordcount(unlist(words[i,1]))
+        df[i,3] <- gsub(pattern = "|||", replacement = "", df[i,3])
     
-    ## Create new features within dataframe
-    df$posts <- posts
-    df$nwords <- nwords
+    }
+        # Create new features within dataframe
+    
+    df[4] <- nwords
+    df[3] <- lapply(df[,3], str_lower_case)
+    
     
     # Determine number of references to each MBTI type within each post 
     for (type in types) {
         
         numtype <- tibble(numtype = integer())
-        sum <- 0
-        
         for (i in seq_along(1:nrow(df))) {
-            
-           sum <- sum + str_count(df[i, 3], type)
+           numtype[i,1] <- str_count(df[i, 3], type)
         }
-        
-        numtype[i] <- sum
-        
+
         df[paste("num", type, sep = "")] <- numtype
 
     }
 }
 
-# mentions of each of 16 personalities 
+
+```
+
+### tf-idf ###
+
+```{r}
 
 ```
 
 ### MODELING ###
 ```{r}
-# Split data 70/30 
 set.seed(1)
 
 # Randomly sample rows from the training set to split into the validation set 
@@ -157,7 +167,6 @@ train <- train[-rows, ]
 
 
 ```
-
 
 
 ### TENSORFLOW REFERNECE ### 
