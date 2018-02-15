@@ -1,10 +1,11 @@
 ---
 title: "MBTI"
-author: "Alex Kan -lexokan"
-date: "February 13, 2018"
+author: "Alex Kan"
+date: "February 10, 2018"
 output: html_document
 ---
 
+### SETUP ###
 ```{r setup, message = F}
 ### TENSORFLOW INSTALLATION 
 
@@ -26,14 +27,14 @@ library(tidyverse)
 
 # https://www.kaggle.com/datasnaek/mbti-type
 
+
+#Read in full dataset, full training set, and test set 
 fulldf <- read_csv("data/mbti_1.csv")
 train <- read_csv("data/train.csv")
 test <- read_csv("data/test_labeled.csv")
 ```
 
-full_training_data[“posts”].apply(lambda x: re.sub(“[^a-z]+“, ” “, x.lower()))
-
-EDA 
+### EDA ###
 ```{r, eval = F, message = F}
 #if (!require("tm")) install.packages("tm")
 #if (!require("SnowballC")) install.packages("SnowballC")
@@ -42,6 +43,8 @@ EDA
 library(tm)
 library(SnowballC)
 library(wordcloud)
+
+# Create new dataframes for each of the MBTI dimensions 
 
 I <- fulldf$posts[grep(".*[I].*", fulldf$posts)]
 E <- fulldf$posts[grep(".*[E].*", fulldf$posts)]
@@ -55,6 +58,8 @@ f <- fulldf$posts[grep(".*[F].*", fulldf$posts)]
 J <- fulldf$posts[grep(".*[J].*", fulldf$posts)]
 P <- fulldf$posts[grep(".*[P].*", fulldf$posts)]
 
+
+# Def function to create and save a word cloud of top 50 most used words (minus stopwords) by commenters containing each aspect 
 create_cloud <- function(x) {
    
 Corpus <- Corpus(VectorSource(x))
@@ -72,6 +77,7 @@ dev.off()
 
 }
 
+# Create word cloud for each of the eight aspects 
 create_cloud(I)
 create_cloud(E)
 create_cloud(N)
@@ -84,40 +90,57 @@ create_cloud(P)
 
 ```
 
-full_training_data[“posts”].apply(lambda x: re.sub(“[^a-z]+“, ” “, x.lower()))
-FEATURIZATION
+### FEATURIZATION ###
 ```{r}
 #if (!require("ngram")) install.packages("ngram")
 library(ngram)
 
+# Create ordered vector of all of the MBTI types for featurization 
 types <- data.frame(unique(train$type))
 types <- as.character(types[order(types[[1]]), ])
 
-# length of post in number of words 
+# Def function to create necessary features for 
 featurize <- function(df) {
     
-    nwords <- tibble(nwords = integer())
+    # Define empty tibbles that will be filled within for loop
     posts <- tibble(posts = character())
+    nwords <- tibble(nwords = integer())
     
     for (i in seq_along(1:nrow(df))) {
         
+        # Fill word count vector and make all characters within posts lowercase 
         words <- df[i, 3] %>% unlist()
         nwords[i] <- wordcount(words)
         posts[i] <- lapply(test[i, 3], tolower)
     }
     
-    df$type <- tolower(df$type)
+    ## Create new features within dataframe
     df$posts <- posts
-    
     df$nwords <- nwords
     
+    # Determine number of references to each MBTI type within each post 
+    for (type in types) {
+        
+        numtype <- tibble(numtype = integer())
+        sum <- 0
+        
+        for (i in seq_along(1:nrow(df))) {
+            
+           sum <- sum + str_count(df[i, 3], type)
+        }
+        
+        numtype[i] <- sum
+        
+        df[paste("num", type, sep = "")] <- numtype
+
+    }
 }
 
 # mentions of each of 16 personalities 
 
 ```
 
-MODELING 
+### MODELING ###
 ```{r}
 # Split data 70/30 
 set.seed(1)
@@ -130,6 +153,7 @@ rows <- sample(1:nrow(train), size = nrow(train) * .25, replace = F)
 validation <- train[rows, ]
 train <- train[-rows, ]
 
+# Create Tensorflow input function 
 
 
 ```
